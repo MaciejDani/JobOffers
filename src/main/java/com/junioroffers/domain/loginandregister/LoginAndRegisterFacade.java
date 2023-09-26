@@ -4,22 +4,21 @@ import com.junioroffers.domain.loginandregister.dto.RegisterUserDto;
 import com.junioroffers.domain.loginandregister.dto.RegistrationResultDto;
 import com.junioroffers.domain.loginandregister.dto.UserDto;
 import lombok.AllArgsConstructor;
-
-import java.util.Optional;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
+@Component
 public class LoginAndRegisterFacade {
 
     private static final String USER_NOT_FOUND = "User not found";
-    private final LoginRepository loginRepository;
+
+    private final LoginRepository repository;
 
     public UserDto findByUsername(String username) {
-        Optional<User> user = loginRepository.findByUsername(username);
-        if (user.isEmpty()) {
-            throw new UsernameNotFoundException(USER_NOT_FOUND);
-        }
-        return new UserDto(user.get().id(), user.get().password(), user.get().username());
-
+        return repository.findByUsername(username)
+                .map(user -> new UserDto(user.id(), user.password(), user.username()))
+                .orElseThrow(() -> new BadCredentialsException(USER_NOT_FOUND));
     }
 
     public RegistrationResultDto register(RegisterUserDto registerUserDto) {
@@ -27,8 +26,7 @@ public class LoginAndRegisterFacade {
                 .username(registerUserDto.username())
                 .password(registerUserDto.password())
                 .build();
-        User savedUser = loginRepository.save(user);
+        User savedUser = repository.save(user);
         return new RegistrationResultDto(savedUser.id(), true, savedUser.username());
-
     }
 }
